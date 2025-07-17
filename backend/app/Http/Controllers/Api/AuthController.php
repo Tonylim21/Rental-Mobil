@@ -10,11 +10,12 @@ use Illuminate\Http\JsonResponse;
 
 class AuthController extends Controller
 {
+    // Login
     public function login(Request $request): JsonResponse {
         // Validasi Input
         $credentials = $request->validate([
             'username' => 'required|string',
-            'password' => 'required',
+            'password' => 'required|string',
         ]);
 
         // Otentikasi User
@@ -34,6 +35,7 @@ class AuthController extends Controller
         return response()->json(['message' => 'Invalid Credentails'], 401);
     }
 
+    // Logout
     public function logout(Request $request): JsonResponse {
         // Hapus Token
         $request->user()->currentAccessToken()->delete();
