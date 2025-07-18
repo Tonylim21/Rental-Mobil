@@ -5,41 +5,70 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use App\Models\User;
-use Illuminate\Http\JsonResponse;
+
 
 class AuthController extends Controller
 {
-    // Login
-    public function login(Request $request): JsonResponse {
+    // Create Account
+    public function register(Request $request) {
         // Validasi Input
-        $credentials = $request->validate([
+        $validated = $request->validate([
+            'username' => 'required|string|max:255|unique:users,username',
+            'password' => 'required|string|min:6',
+            'phone' => 'required|string|max:20',
+            'address' => 'nullable|string|max:255',
+        ]);
+
+        $admin = User::create([
+            'username' => $validated['username'],
+            'password' => Hash::make($validated['password']),
+            'phone'    => $validated['phone'],
+            'address'  => $validated['address'],
+            'role'     => 'admin',
+        ]);
+
+        return response()->json([
+            'message' => 'Admin Created Successfully',
+            'admin' => $admin
+        ], 201);
+    }
+
+    // Login
+    public function login(Request $request) {
+        // Validasi Input
+        $request->validate([
             'username' => 'required|string',
             'password' => 'required|string',
         ]);
 
-        // Otentikasi User
-        if (Auth::attempt($credentials)) {
-            $user = Auth::user();
-            // Token
-            $token = $user->createToken('auth_token')->plainTextToken;
-
-            return response()->json([
-                'message' => 'Login successful',
-                'user' => $user,
-                'access_token' => $token,
-            ]);
+        // Cek Credential
+        if (!Auth::attempt($request->only('username', 'password'))) {
+            // Jika Gagal
+            return response()->json(['message' => 'Invalid Login Details'], 401);
         }
 
-        // Jika Otentikasi Gagal
-        return response()->json(['message' => 'Invalid Credentails'], 401);
+        // Ambil User yang Login
+        $user = User::where('username', $request['username'])->firstOrFail();
+
+        // Token
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        // Response
+        return response()->json([
+            'message' => ' Login Successful',
+            'user' => $user,
+            'access_token' => $token,
+        ]);
     }
 
     // Logout
-    public function logout(Request $request): JsonResponse {
+    public function logout(Request $request) {
         // Hapus Token
         $request->user()->currentAccessToken()->delete();
 
-        return response()->json(['message' => 'Logout successful']);
+        // Response
+        return response()->json(['message' => 'Logout Successful']);
     }
 }
