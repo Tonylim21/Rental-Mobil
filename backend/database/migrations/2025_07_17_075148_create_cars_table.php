@@ -19,7 +19,8 @@ return new class extends Migration
             $table->string('brand');
             $table->string('year');
             $table->decimal('price_per_day', 10, 2);
-            $table->enum('status', ['available', 'not_available'])->default('available');
+            $table->string('car_photo')->nullable();
+            $table->enum('status', ['available', 'unavailable'])->default('available');
             $table->timestamps();
         });
     }
