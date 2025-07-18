@@ -18,6 +18,7 @@ class Car extends Model
         'brand',
         'year',
         'price_per_day',
+        'car_photo',
         'status',
     ];
 
