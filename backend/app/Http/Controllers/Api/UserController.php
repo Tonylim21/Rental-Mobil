@@ -10,13 +10,24 @@ use Illuminate\Support\Facades\Validator;
 
 class UserController extends Controller
 {
-    // Menampilkan Semua User dengan Role Customer
+    // Menampilkan Semua User 
     public function index() {
         $customers = User::where('role', 'customer')->latest()->get();
-        return response()->json($customers);
+
+        if ($customers->isEmpty()) {
+            return response()->json([
+                'message' => 'No Customers Right Now',
+                'data' => [],
+            ]);
+        }
+        
+        return response()->json([
+            'message' => 'Here Is Our Customers',
+            'data' => $customers,
+        ]);
     }
 
-    // Menyimpan User Baru (Customer)
+    // Admin Menyimpan Customer Baru
     public function store(Request $request) {
         // Validasi Input
         $validator = Validator::make($request->all(),[
