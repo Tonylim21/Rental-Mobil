@@ -13,7 +13,19 @@ class CarController extends Controller
     // Menampilkan Semua Mobil
     public function index() {
         $cars = Car::latest()->get();
-        return response()->json($cars);
+
+        // jika Belum Ada Mobil
+        if ($cars->isEmpty()) {
+            return response()->json([
+                'message' => 'No Cars Added',
+                'data' => [],
+            ], 200);
+        }
+
+        return response()->json([
+            'message' => 'Cars Retrieved Successfully',
+            'data' => $cars,
+        ], 200);
     }
 
     // Tambah Mobil
@@ -52,11 +64,22 @@ class CarController extends Controller
     // Detail Satu Mobil
     public function show(Car $car) {
         return response()->json($car);
+
+        // Jika Tidak Ada Mobil yang Dipilih
+        if (!$car) {
+            return response()->json(['message' => 'No Car Choosed'], 400);
+        }
+
+        return response()->json([
+            'message' => 'Car Retrieved Successfully',
+            'data' => $car,
+        ]);
     }
 
     // Update Mobil
     public function update(Request $request, Car $car) {
         $car = Car::find($car->id);
+
         if (!$car) {
             return response()->json(['message' => 'Car Not Found'], 404);
         }
@@ -68,23 +91,34 @@ class CarController extends Controller
             'brand' => 'sometimes|required|string',
             'year' => 'sometimes|required|integer|digits:4',
             'price_per_day' => 'sometimes|required|numeric',
-            'status' => 'sometimes|required|in:available,unavailable'
+            'car_photo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'status' => 'sometimes|required|in:available,not_available',
         ]);
 
         if ($validator->fails()) {
             return response()->json($validator->errors(), 422);
         }
 
-        $data = $request->except('car_photo');
-        if ($car->car_photo && Storage::exists('public/car_photos/' . $car->car_photo)) {
-            Storage::delete('car_photo/' . $car->car_photo);
+        // Ambil Data Lolos Validasi
+        $data = $validator->validated();
+
+        // Cek & Proses File Upload
+        if ($request->hasFile('car_photo')) {
+            // Hapus Foto Lama
+            if ($car->car_photo && Storage::exists('public/car_photos/' . basename($car->car_photo))) {
+                Storage::delete('public/car_photos/' . basename($car->car_photo));
+            }
+
+            // Simpan Foto Baru dan Tambahkan ke $data
+            $file = $request->file('car_photo');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $file->storeAs('public/car_photos', $filename);
+            
+            // Simpan Path Lengkap Untuk Diakses Frontend
+            $data['car_photo'] = url('storage/car_photos/' . $filename);
         }
 
-        $file = $request->file('car_photo');
-        $filename = time() . '_' . $file->getClientOriginalName();
-        $file->storeAs('public/car_photos', $filename);
-        $data['car_photo'] = $filename;
-
+        // UPDATE
         $car->update($data);
 
         return response()->json([
