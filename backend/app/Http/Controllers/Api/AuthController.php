@@ -24,9 +24,9 @@ class AuthController extends Controller
         $admin = User::create([
             'username' => $validated['username'],
             'password' => Hash::make($validated['password']),
-            'phone'    => $validated['phone'],
-            'address'  => $validated['address'],
-            'role'     => 'admin',
+            'phone' => $validated['phone'],
+            'address' => $validated['address'],
+            'role' => 'admin',
         ]);
 
         return response()->json([
