@@ -69,7 +69,7 @@ class CarController extends Controller
         if (!$car) {
             return response()->json(['message' => 'No Car Choosed'], 400);
         }
-
+        
         return response()->json([
             'message' => 'Car Retrieved Successfully',
             'data' => $car,
