@@ -15,13 +15,17 @@ class TransactionController extends Controller
 {
     // ADMIN: Lihat semua transaksi
     public function index() {
-        // Otorisasi Role User
-        if (Auth::user()->role !== 'admin') {
-            return response()->json(['message' => 'Unauthorized'], 403);
+        $user = Auth::user();
+        $query = Transaction::with(['car', 'user'])->latest();
+
+        // Jika user adalah admin, tampilkan semua transaksi
+        if ($user->role === 'admin') {
+            $transactions = $query->get();
+        } else { // Jika customer, tampilkan hanya transaksinya sendiri
+            $transactions = $query->where('user_id', $user->id)->get();
         }
 
-        $transactions = Transaction::with(['user', 'car'])->latest()->get();
-        return response()->json($transactions, 200);
+        return response()->json($transactions);
     }
 
     // USER: Buat transaksi rental mobil
@@ -42,7 +46,7 @@ class TransactionController extends Controller
         // Hitung Total Harga
         $startDate = Carbon::parse($request->start_date);
         $endDate = Carbon::parse($request->end_date);
-        $days = max(1, $endDate->diffInDays($startDate)); 
+        $days = $endDate->diffInDays($startDate) + 1; 
         $totalPrice = $days * $car->price_per_day;
 
         $transaction = null;
@@ -68,18 +72,21 @@ class TransactionController extends Controller
     }
 
     // Detail Transaksi
-    public function show($id) {
+    public function show(Transaction $transaction) {
         $user = Auth::user();
-        $query = Transaction::with(['car', 'user'])->latest();
 
-        // Jika User Admin
-        if ($user->role === 'admin') {
-            $transaction = $query->get();
-        } else { // Jika User Customer
-            $transaction = $query->where('user_id', $user->id)->get(); 
+        // 1. Jika user adalah admin, langsung izinkan.
+        // 2. Jika user adalah customer, cek apakah dia pemilik transaksi ini.
+        // 3. Jika bukan keduanya, tolak akses.
+        if ($user->role === 'admin' || $transaction->user_id === $user->id) {
+            // Jika user adalah admin ATAU pemilik transaksi,
+            // load relasi dan kirim data.
+            $transaction->load(['car', 'user']);
+            return response()->json($transaction);
         }
-
-        return response()->json($transaction);
+        
+        // Load relasi car dan user jika belum ter-load
+        return response()->json(['message' => 'Unauthorized to view this transaction'], 403);
     }
 
     // ADMIN: Hapus transaksi
