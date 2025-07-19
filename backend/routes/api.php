@@ -32,34 +32,40 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->group(function () {
     // Logout
     Route::post('/logout', [AuthController::class, 'logout']);
-
+    
     // Endpoint Lihat Mobil
     Route::get('/cars', [CarController::class, 'index']);
-    Route::get('/car/{car}', [CarController::class, 'index']);
+    Route::get('/car/{car}', [CarController::class, 'show']);
 
+    // Endpoitn Lihat Transaksi
+    Route::get('/transactions', [TransactionController::class, 'index']);
+    
+    // Role Admin
     Route::middleware('role:admin')->group(function () {
         // Endpoint Tambah Mobil (Admin)
         Route::post('/cars', [CarController::class, 'store']);
-        Route::put('/cars/{car}', [CarController::class, 'update']);
-        Route::delete('/cars/{car}', [CarController::class, 'destroy']);
-
-        // Endpoint Lihat dan Hapus Transaksi
-        Route::get('/transactions', [TransactionController::class, 'index']);
+        Route::put('/car/{car}', [CarController::class, 'update']);
+        Route::delete('/car/{car}', [CarController::class, 'destroy']);
+        
+        // Endpoint Lihat Hapus Transaksi
         Route::delete('/transaction/{id}', [TransactionController::class, 'destroy']);
-
+        
         // Endpoint CRUD User
         Route::get('/users', [UserController::class, 'index']);
-        Route::get('/user/{user}', [UserController::class, 'show']);
         Route::post('/users', [UserController::class, 'store']);
-        Route::put('/user/{user}', [UserController::class, 'update']);
         Route::delete('/user/{user}', [UserController::class, 'destroy']);
     });
-
-    // Endpoint User Transaksi
+    
+    // Role Customer
     Route::middleware('role:customer')->group(function () {
+        // Endpoint Detail User (Customer)
+        Route::get('/user/{user}', [UserController::class, 'show']);
+        // Endpoint User Transaksi
         Route::post('/transactions', [TransactionController::class, 'store']);
+        // Endpoint Update User (Customer)
+        Route::put('/user/{user}', [UserController::class, 'update']);
     });
-
+    
     // Endpoint History Transaksi
-    Route::get('/transaction/history', [TransactionController::class, 'show']);
+    Route::get('/transaction/{transaction}', [TransactionController::class, 'show']);
 });
