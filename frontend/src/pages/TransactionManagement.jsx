@@ -13,7 +13,7 @@ export default function TransactionManagement() {
 
   const fetchTransactions = () => {
     setLoading(true);
-    axiosClient.get('/transactions') // Asumsi endpoint ini mengembalikan semua transaksi untuk admin
+    axiosClient.get('/transactions')
       .then(({ data }) => {
         setTransactions(data);
         setLoading(false);
@@ -54,7 +54,7 @@ export default function TransactionManagement() {
     }
     axiosClient.delete(`/transactions/${transactionId}`)
       .then(() => {
-        fetchTransactions(); // Refresh data setelah hapus
+        fetchTransactions();
       });
   };
 
@@ -99,11 +99,14 @@ export default function TransactionManagement() {
                   </span>
                 </td>
                 <td>
-                  <button className="btn-edit" style={{marginRight: '5px'}} onClick={() => openDetailModal(trx)}>Detail</button>
+                  <button className="btn-edit" onClick={() => openDetailModal(trx)}>Detail</button>
                   
-                  {/* Tombol Selesaikan hanya muncul jika status 'ongoing' */}
+                  {/* --- PERBAIKAN STYLE DI SINI --- */}
                   {trx.status === 'ongoing' && (
-                    <button className="btn" style={{backgroundColor: '#28a745', marginRight: '5px'}} onClick={() => onComplete(trx.id)}>
+                    <button 
+                      className="btn-edit" // Menggunakan className yang sama dengan tombol 'Detail'
+                      style={{backgroundColor: '#28a745'}} // Tetap beri warna hijau agar jelas
+                      onClick={() => onComplete(trx.id)}>
                       Selesaikan
                     </button>
                   )}
