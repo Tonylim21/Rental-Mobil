@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 
@@ -66,36 +67,32 @@ class UserController extends Controller
     }
 
     // Update User (Customer)
-    public function update(Request $request, User $user) {
-        // Cek User = Customer
-        if ($user->role !== 'customer') {
-            return response()->json(['message' => 'User is not a customer'], 403);
-        }
+    public function updateProfile(Request $request) {
+        // Ambil ID user yang sedang login
+        $userId = Auth::id();
+        // Ambil instance model User yang lengkap dari database
+        $user = User::findOrFail($userId);
 
-        // Validasi Input
-        $validator =  Validator::make($request->all(), [
-            'username' => 'sometimes|required|string|unique:users,username,' . $user->id,
-            'password' => 'sometimes|nullable|string|min:6',
-            'phone' => 'sometimes|required|string',
+        $validatedData = $request->validate([
+            'username' => 'sometimes|required|string|max:255|unique:users,username,' . $user->id,
+            'phone' => 'nullable|string',
             'address' => 'nullable|string',
+            'password' => 'nullable|string|min:6|confirmed',
         ]);
 
-        if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
-        }
+        $user->username = $validatedData['username'] ?? $user->username;
+        $user->phone = $validatedData['phone'] ?? $user->phone;
+        $user->address = $validatedData['address'] ?? $user->address;
 
-        $user->username = $request->username ?? $user->username;
-        $user->phone = $request->phone ?? $user->phone;
-        $user->address = $request->address ?? $user->address;
-        if ($request->filled('password')) {
-            $user->password = Hash::make($request->password);
+        if (!empty($validatedData['password'])) {
+            $user->password = Hash::make($validatedData['password']);
         }
 
         $user->save();
 
         return response()->json([
-            'message' => 'Customer Updated Successfully',
-            'user' => $user
+            'message' => 'Profile updated successfully',
+            'user' => $user,
         ]);
     }
 
