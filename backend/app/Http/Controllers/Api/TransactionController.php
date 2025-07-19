@@ -89,6 +89,26 @@ class TransactionController extends Controller
         return response()->json(['message' => 'Unauthorized to view this transaction'], 403);
     }
 
+    // Transaksi Selesai
+    public function complete(Transaction $transaction) {
+        // Cek jika transaksi sudah selesai
+        if ($transaction->status === 'completed') {
+            return response()->json(['message' => 'Transaction is already completed.'], 409);
+        }
+
+        DB::transaction(function () use ($transaction) {
+            // 1. Ubah status transaksi menjadi 'completed'
+            $transaction->update(['status' => 'completed']);
+
+            // 2. Ubah status mobil kembali menjadi 'available'
+            if ($transaction->car) {
+                $transaction->car->update(['status' => 'available']);
+            }
+        });
+
+        return response()->json(['message' => 'Transaction completed successfully.']);
+    }
+
     // ADMIN: Hapus transaksi
     public function destroy($id) {
         // Otorisasi Role User
@@ -97,7 +117,20 @@ class TransactionController extends Controller
         }
 
         $transaction = Transaction::findOrFail($id);
-        $transaction->delete();
-        return response()->json(['message' => 'Transaksi Deleted Successfully'], 200);
+
+        DB::transaction(function () use ($transaction) {
+            // Ambil mobil yang terhubung dengan transaksi ini
+            $car = $transaction->car;
+
+            // Hapus record transaksi
+            $transaction->delete();
+
+            // Jika mobilnya ada, ubah statusnya kembali menjadi 'available'
+            if ($car) {
+                $car->update(['status' => 'available']);
+            }
+        });
+
+        return response()->json(['message' => 'Transaction deleted successfully and car status updated.'], 200);
     }
 }
